@@ -1,0 +1,38 @@
+[package]
+name = "mhrv-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of MasterHttpRelayVPN -- DPI bypass via Google Apps Script relay with domain fronting"
+license = "MIT"
+
+[[bin]]
+name = "mhrv-rs"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "io-util", "signal", "sync"] }
+tokio-rustls = "0.26"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-pemfile = "2"
+webpki-roots = "0.26"
+rcgen = { version = "0.13", features = ["x509-parser"] }
+rustls-pki-types = "1"
+time = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "2"
+base64 = "0.22"
+bytes = "1"
+httparse = "1"
+rand = "0.8"
+h2 = "0.4"
+http = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
