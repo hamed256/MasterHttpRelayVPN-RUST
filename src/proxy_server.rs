@@ -354,6 +354,7 @@ async fn dispatch_tunnel(
 ) -> std::io::Result<()> {
     // 1. Explicit hosts override or SNI-rewrite suffix: always use the tunnel.
     if matches_sni_rewrite(&host) || hosts_override(&rewrite_ctx.hosts, &host).is_some() {
+        tracing::info!("dispatch {}:{} -> sni-rewrite tunnel (Google edge direct)", host, port);
         return do_sni_rewrite_tunnel_from_tcp(sock, &host, port, mitm, rewrite_ctx).await;
     }
 
@@ -371,13 +372,29 @@ async fn dispatch_tunnel(
         Ok(Err(_)) => return Ok(()),
         Err(_) => {
             // Client silent: likely a server-first protocol.
-            plain_tcp_passthrough(sock, &host, port, rewrite_ctx.upstream_socks5.as_deref()).await;
+            let via = rewrite_ctx.upstream_socks5.as_deref();
+            tracing::info!(
+                "dispatch {}:{} -> raw-tcp ({}) (client silent, likely server-first)",
+                host,
+                port,
+                via.unwrap_or("direct")
+            );
+            plain_tcp_passthrough(sock, &host, port, via).await;
             return Ok(());
         }
     };
 
     if peek_n >= 1 && peek_buf[0] == 0x16 {
-        // Looks like TLS: MITM + relay via Apps Script.
+        // Looks like TLS: MITM + relay via Apps Script. Note: upstream_socks5
+        // is NOT consulted here by design — HTTPS goes through the Apps Script
+        // relay, which is the whole reason mhrv-rs exists. If you want HTTPS
+        // to flow through xray, disable mhrv-rs and point your browser at
+        // xray directly.
+        tracing::info!(
+            "dispatch {}:{} -> MITM + Apps Script relay (TLS detected)",
+            host,
+            port
+        );
         run_mitm_then_relay(sock, &host, port, mitm, &fronter).await;
         return Ok(());
     }
@@ -386,11 +403,24 @@ async fn dispatch_tunnel(
     //    fall back to plain TCP passthrough.
     if peek_n > 0 && looks_like_http(&peek_buf[..peek_n]) {
         let scheme = if port == 443 { "https" } else { "http" };
+        tracing::info!(
+            "dispatch {}:{} -> Apps Script relay (plain HTTP, scheme={})",
+            host,
+            port,
+            scheme
+        );
         relay_http_stream_raw(sock, &host, port, scheme, &fronter).await;
         return Ok(());
     }
 
-    plain_tcp_passthrough(sock, &host, port, rewrite_ctx.upstream_socks5.as_deref()).await;
+    let via = rewrite_ctx.upstream_socks5.as_deref();
+    tracing::info!(
+        "dispatch {}:{} -> raw-tcp ({}) (non-HTTP, non-TLS client payload)",
+        host,
+        port,
+        via.unwrap_or("direct")
+    );
+    plain_tcp_passthrough(sock, &host, port, via).await;
     Ok(())
 }
 

@@ -1,8 +1,16 @@
 # MasterHttpRelayVPN-RUST
 
+[![Latest release](https://img.shields.io/github/v/release/therealaleph/MasterHttpRelayVPN-RUST?sort=semver&display_name=tag&logo=github&label=release)](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/therealaleph/MasterHttpRelayVPN-RUST/total?label=downloads&logo=github)](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/releases)
+[![CI](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/actions/workflows/release.yml/badge.svg)](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/github/license/therealaleph/MasterHttpRelayVPN-RUST?color=blue)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/therealaleph/MasterHttpRelayVPN-RUST?style=flat&logo=github)](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/stargazers)
+
 Rust port of [@masterking32's MasterHttpRelayVPN](https://github.com/masterking32/MasterHttpRelayVPN). **All credit for the original idea and the Python implementation goes to [@masterking32](https://github.com/masterking32).** This is a faithful reimplementation of the `apps_script` mode, packaged as two tiny binaries (CLI + desktop UI) with no runtime dependencies.
 
 Free DPI bypass via Google Apps Script as a remote relay, with TLS SNI concealment. Your ISP's censor sees traffic going to `www.google.com`; behind the scenes a free Google Apps Script that you deploy in your own Google account fetches the real website for you.
+
+> **Heads up on authorship:** the bulk of this Rust port was written with [Anthropic's Claude](https://claude.com) driving, reviewed by a human on every commit. Bug reports, fixes, and contributions are all welcome — see the [issues page](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/issues).
 
 **[English Guide](#setup-guide)** | **[راهنمای فارسی](#راهنمای-فارسی)**
 
@@ -356,6 +364,8 @@ Original project: <https://github.com/masterking32/MasterHttpRelayVPN> by [@mast
 یک پروکسی کوچک که روی سیستم خودتان اجرا می‌شود و ترافیک شما را از طریق یک اسکریپت رایگان که در حساب گوگل خودتان می‌سازید، عبور می‌دهد. `ISP` شما فقط یک اتصال `HTTPS` ساده به `www.google.com` می‌بیند و اجازه می‌دهد رد شود؛ در پشت پرده، اسکریپتی که خودتان منتشر می‌کنید سایت مقصد را برای شما می‌خواند و پاسخ را بازمی‌گرداند.
 
 این نسخهٔ `Rust` از پروژهٔ اصلی [MasterHttpRelayVPN](https://github.com/masterking32/MasterHttpRelayVPN) اثر [@masterking32](https://github.com/masterking32) است. **تمام اعتبار ایده و نسخهٔ اصلی پایتون برای ایشان است.** این پورت همان روش را در قالب یک فایل اجرایی تک‌پارچه (~۳ مگابایت) بدون نیاز به نصب پایتون یا هیچ وابستگی دیگری ارائه می‌دهد.
+
+> **نکتهٔ مهم دربارهٔ نویسندگی:** بیشتر کدِ این پورت `Rust` با کمک [Claude](https://claude.com) شرکت Anthropic نوشته شده و روی هر commit توسط انسان بازبینی شده است. اگر باگی دیدید یا پیشنهادی دارید، لطفاً در [صفحهٔ issues](https://github.com/therealaleph/MasterHttpRelayVPN-RUST/issues) گزارش دهید.
 
 ### برای چه کسی مفید است؟
 

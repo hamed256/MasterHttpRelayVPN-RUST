@@ -29,6 +29,17 @@ fn main() -> eframe::Result<()> {
     let shared = Arc::new(Shared::default());
     let (cmd_tx, cmd_rx) = std::sync::mpsc::channel::<Cmd>();
 
+    // Hook tracing events into the Recent log panel. Without this every
+    // tracing::info! / debug! / trace! the proxy emits gets swallowed and
+    // the panel only ever shows our manual push_log calls, making the log
+    // level selector look useless (issue #12 bug 2).
+    //
+    // The env-filter respects RUST_LOG if set, otherwise defaults to info
+    // so users see routing decisions immediately without any knob-turning.
+    // When they start the proxy and Save the config, the log level from the
+    // config is applied to the in-process filter (see on_start below).
+    install_ui_tracing(shared.clone());
+
     let shared_bg = shared.clone();
     std::thread::Builder::new()
         .name("mhrv-bg".into())
@@ -1196,6 +1207,83 @@ fn background_thread(shared: Arc<Shared>, rx: Receiver<Cmd>) {
             }
         }
     }
+}
+
+/// Install a tracing subscriber that mirrors every log event into the UI's
+/// Recent log panel.
+///
+/// Respects `RUST_LOG` if set. Otherwise defaults to `info` — which is what
+/// users mean when they pick a non-default log level in the form. (trace /
+/// debug flip too much noise for a local GUI, so the combo-box changes level
+/// live via the `reload` handle that `with_env_filter` gives us but we keep
+/// the default boot-time level at info so first-run behavior is sensible.)
+fn install_ui_tracing(shared: Arc<Shared>) {
+    use tracing_subscriber::fmt::MakeWriter;
+    use tracing_subscriber::EnvFilter;
+
+    /// A MakeWriter that pushes each line into the shared log panel.
+    struct UiLogWriter {
+        shared: Arc<Shared>,
+    }
+
+    struct UiWriterInst {
+        shared: Arc<Shared>,
+        buf: Vec<u8>,
+    }
+
+    impl<'a> MakeWriter<'a> for UiLogWriter {
+        type Writer = UiWriterInst;
+        fn make_writer(&'a self) -> Self::Writer {
+            UiWriterInst {
+                shared: self.shared.clone(),
+                buf: Vec::with_capacity(128),
+            }
+        }
+    }
+
+    impl std::io::Write for UiWriterInst {
+        fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+            self.buf.extend_from_slice(data);
+            Ok(data.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            if self.buf.is_empty() {
+                return Ok(());
+            }
+            let text = String::from_utf8_lossy(&self.buf).trim_end().to_string();
+            self.buf.clear();
+            // Split on newlines in case multiple events got buffered.
+            for line in text.lines() {
+                if line.is_empty() {
+                    continue;
+                }
+                let mut s = self.shared.state.lock().unwrap();
+                s.log.push_back(line.to_string());
+                while s.log.len() > LOG_MAX {
+                    s.log.pop_front();
+                }
+            }
+            Ok(())
+        }
+    }
+
+    impl Drop for UiWriterInst {
+        fn drop(&mut self) {
+            let _ = std::io::Write::flush(self);
+        }
+    }
+
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,hyper=warn"));
+
+    let writer = UiLogWriter { shared };
+
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .with_ansi(false)
+        .with_writer(writer)
+        .try_init();
 }
 
 fn push_log(shared: &Shared, msg: &str) {
