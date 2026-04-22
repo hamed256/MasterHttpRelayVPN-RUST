@@ -39,7 +39,7 @@ fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([WIN_WIDTH, WIN_HEIGHT])
-            .with_min_inner_size([420.0, 540.0])
+            .with_min_inner_size([420.0, 400.0])
             .with_title(format!("mhrv-rs {}", VERSION)),
         ..Default::default()
     };
@@ -409,6 +409,13 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.style_mut().spacing.item_spacing = egui::vec2(8.0, 6.0);
 
+            // Wrap the whole central panel in a vertical scroll area so the
+            // form + stats + log panel stay accessible on short screens
+            // (~13" laptops at default scaling). Nested scroll areas still
+            // work fine within this outer scroller.
+            egui::ScrollArea::vertical()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label(egui::RichText::new(format!("mhrv-rs  {}", VERSION))
                     .size(16.0));
@@ -736,6 +743,7 @@ impl eframe::App for App {
                     self.toast = None;
                 }
             }
+                }); // end ScrollArea
         });
     }
 }

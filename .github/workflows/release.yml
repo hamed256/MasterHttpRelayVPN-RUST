@@ -14,11 +14,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Pin to Ubuntu 22.04 (GLIBC 2.35) so the glibc builds run on any
+          # distro that's ≥ Ubuntu 22.04 / Debian 12 / Mint 21 / Fedora 36.
+          # ubuntu-latest points at 24.04 (GLIBC 2.39) which bakes in a
+          # too-new GLIBC symbol requirement and rejects loading on older
+          # distros. For users behind tight internet who literally can't
+          # dist-upgrade, this matters.
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-22.04
             name: mhrv-rs-linux-amd64
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-22.04
             name: mhrv-rs-linux-arm64
           - target: x86_64-apple-darwin
             os: macos-latest
